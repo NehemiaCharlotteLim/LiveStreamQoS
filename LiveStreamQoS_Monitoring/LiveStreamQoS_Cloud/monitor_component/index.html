@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{color-scheme:dark;--fg:#eef3fa;--muted:#a7b1c0;--edge:#2f3b4a;--surface:#162133;--accent:#e44d61;--good:#168765;--warn:#c98b30}
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:transparent;color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px}
+.wrap{width:100%;padding:4px 1px 15px}.switch{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 13px}
+.connection{font-weight:600;color:var(--fg);line-height:1.4}.helper{font-size:12px;color:var(--muted);line-height:1.6}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0 12px}
+button{cursor:pointer;padding:13px 10px;border-radius:8px;border:1px solid var(--edge);font-weight:650;font-size:14px;color:var(--fg);background:#202d40}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button:disabled{opacity:.45;cursor:not-allowed}
+.note{border:1px solid var(--edge);background:var(--surface);padding:12px 14px;border-radius:9px;color:var(--muted);line-height:1.55;font-size:13px;margin:12px 0}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:13px}
+.metric{padding:14px 12px 13px;background:var(--surface);border:1px solid var(--edge);border-radius:11px;min-height:104px}
+.metric .caption{font-size:12px;color:var(--muted);font-weight:550;margin-bottom:9px}.metric .value{font-size:23px;font-weight:730;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+.metric .unit{font-size:12px;color:var(--muted);font-weight:450;margin-left:3px}
+.bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:13px 0 8px;flex-wrap:wrap}
+small{color:var(--muted)}.progress{height:8px;background:#253145;border-radius:15px;overflow:hidden;margin:7px 0 20px}
+.progress>div{height:100%;width:0;background:#3794f8;transition:width 300ms}
+.outcome{border:1px solid var(--edge);border-radius:11px;background:var(--surface);padding:17px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:95px}
+.outcome .eyebrow{font-size:13px;color:var(--muted);margin-bottom:6px}.outcome .status{font-size:26px;font-weight:760;letter-spacing:.3px}
+.outcome .status.good{color:#49d29f}.outcome .status.bad{color:#ff8a73}
+.outcome .sub{font-size:12px;color:var(--muted);line-height:1.6;margin-top:6px}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8791a1;margin-right:6px}.live.on{background:#45d59f}
+@media(max-width:700px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric{min-height:90px}.metric .value{font-size:20px}.controls{grid-template-columns:1fr 1fr}.outcome .status{font-size:23px}}
+@media(prefers-color-scheme:light){:root{color-scheme:light;--fg:#17243b;--muted:#55647b;--edge:#d5dce6;--surface:#f3f6fb}.progress{background:#e4eaf3}button{background:#e5ebf5}.outcome .status.good{color:#07825d}.outcome .status.bad{color:#c64332}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="switch"><span class="live" id="live"></span><span class="connection" id="conn">Memeriksa koneksi browser...</span></div>
+  <p class="helper">Pemantauan HTTP dari HP/laptop; prediksi diproses di server menggunakan model XGBoost yang dilatih dalam penelitian.</p>
+  <div class="controls"><button class="primary" id="start">Mulai Monitoring</button><button id="stop" disabled>Hentikan Monitoring</button></div>
+  <div id="notice" class="note">Tekan <b>Mulai Monitoring</b>. Pengukuran dilakukan berkala setiap ±5 detik. Sesudah 12 pengukuran valid, XGBoost memprediksi indikasi QoS 60 detik berikutnya.</div>
+  <div class="metrics">
+    <div class="metric"><div class="caption">Latency (HTTP)</div><div class="value"><span id="lat">—</span><span class="unit">ms</span></div></div>
+    <div class="metric"><div class="caption">Jitter (HTTP)</div><div class="value"><span id="jit">—</span><span class="unit">ms</span></div></div>
+    <div class="metric"><div class="caption">Packet Loss (HTTP)</div><div class="value"><span id="loss">—</span><span class="unit">%</span></div></div>
+    <div class="metric"><div class="caption">Throughput (download HTTP)</div><div class="value"><span id="thru">—</span><span class="unit">Mbps</span></div></div>
+  </div>
+  <div class="bottom"><small id="sampleCount">Riwayat valid: 0 / 12 sampel</small><small id="lastTime">Belum ada pengukuran</small></div>
+  <div class="progress"><div id="bar"></div></div>
+  <div class="outcome"><div><div class="eyebrow">Hasil model XGBoost (indikatif)</div><div class="status" id="status">MENUNGGU DATA</div><div class="sub" id="details">Memerlukan 12 pengukuran valid. Model memprediksi QoS 60 detik ke depan.</div></div></div>
+  <div class="note"><strong>Metode:</strong> Pengukuran menggunakan HTTP browser, termasuk unduh HTTP untuk throughput. Model XGBoost menghasilkan label dari 24 fitur turunan (12 pengukuran), tanpa aturan ambang manual pada aplikasi. <strong>Makna label:</strong> Normal QoS indikatif / Penurunan QoS indikatif untuk sekitar 60 detik berikutnya, bukan bukti gangguan tayangan. Label data latih adalah proxy QoS empiris; perbedaan data HTTP dengan data latih perlu divalidasi.</div>
+</div>
+<script>
+(()=>{'use strict';
+ const el = id => document.getElementById(id);
+ let running=false, generation=0, clock=null, rows=[], probeEndpoint='static';
+ let modelReady=false, modelIssue='Model penelitian belum terpasang.', lastError='';
+ let lastRequestId='', sequence=0, sessionId='';
+ const base=window.location.origin;
+ const tiny='/app/static/probe.txt';
+ const big='/app/static/probe_256k.txt';
+ const health='/_stcore/health';
+ const fmt=(v,d=2)=>Number.isFinite(v)?Number(v).toFixed(d):'—';
+ const send=(type,rest={})=>window.parent.postMessage({isStreamlitMessage:true,type,...rest},'*');
+ const sendHeight=()=>send('streamlit:setFrameHeight',{height:Math.ceil(document.body.scrollHeight)});
+ const sessionToken=()=>Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+ function showConn(){
+   if(!navigator.onLine){el('conn').textContent='Perangkat sedang offline';return;}
+   const n=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+   if(n&&n.type==='wifi')el('conn').textContent='Wi-Fi terdeteksi oleh browser';
+   else if(n&&n.type==='cellular')el('conn').textContent='Koneksi seluler terdeteksi';
+   else if(n&&n.type==='ethernet')el('conn').textContent='Koneksi kabel terdeteksi';
+   else el('conn').textContent='Internet tersedia (jenis jaringan tidak terdeteksi oleh browser)';
+ }
+ window.addEventListener('online',showConn);window.addEventListener('offline',showConn);
+ function setStatus(label,kind,detail){
+   el('status').textContent=label;
+   el('status').className='status'+(kind?' '+kind:'');
+   el('details').textContent=detail;
+ }
+ function updateModelAvailability(){
+   if(!running && rows.length===0){
+     setStatus(modelReady?'MENUNGGU DATA':'MODEL BELUM SIAP','',modelReady?'Perlu 12 pembacaan valid.':modelIssue);
+   }else if(!modelReady && rows.length>=12){
+     setStatus('MODEL BELUM SIAP','',modelIssue);
+   }
+ }
+ window.addEventListener('message',event=>{
+   if(event.source!==window.parent || !event.data || event.data.type!=='streamlit:render')return;
+   const args=event.data.args||{};
+   modelReady=Boolean(args.model_ready);
+   modelIssue=String(args.model_issue||'Model XGBoost belum tersedia.');
+   const result=args.result;
+   if(result && result.request_id===lastRequestId && rows.length>=12){
+     if(result.ok===true && (result.label==='Normal'||result.label==='Gangguan')){
+       const p=Number(result.class_probability);
+       const extra=(result.class_probability!==undefined && Number.isFinite(p))?
+         ' Probabilitas kelas menurut model: '+(p*100).toFixed(1)+'%.':'';
+       setStatus(result.label.toUpperCase(),result.label==='Normal'?'good':'bad',
+         'Keluaran XGBoost: '+String(result.model_label||'')+'. Indikasi QoS 60 detik berikutnya berdasarkan 12 sampel HTTP.'+extra);
+     }else{
+       setStatus('PREDIKSI GAGAL','',String(result.error||'Kesalahan inferensi model.'));
+     }
+   } else if (!modelReady){
+     updateModelAvailability();
+   }
+   requestAnimationFrame(sendHeight);
+ });
+ function url(path){return base+path+(path.includes('?')?'&':'?')+'v='+Date.now()+'_'+Math.random().toString(36).slice(2,7);}
+ async function request(path,timeout=2500){
+   const controller=new AbortController();const to=setTimeout(()=>controller.abort(),timeout);const started=performance.now();
+   try{
+     const r=await fetch(url(path),{method:'GET',cache:'no-store',signal:controller.signal,credentials:'omit'});
+     if(!r.ok)throw Error('HTTP '+r.status);
+     const data=await r.arrayBuffer();
+     return {ok:true,ms:performance.now()-started,bytes:data.byteLength};
+   }catch(err){return {ok:false,ms:performance.now()-started,bytes:0,error:String(err.message||err)};}
+   finally{clearTimeout(to);}
+ }
+ async function oneSample(){
+   const rt=[];let failures=0;
+   for(let i=0;i<4;i++){
+     let res=await request(probeEndpoint==='static'?tiny:health);
+     if(!res.ok && probeEndpoint==='static'){
+       probeEndpoint='health';res=await request(health);
+     }
+     if(res.ok)rt.push(res.ms);else{failures++;lastError=res.error||'Permintaan HTTP gagal';}
+   }
+   const latency=rt.length?rt.reduce((a,b)=>a+b,0)/rt.length:null;
+   const jitter=rt.length>=2?rt.slice(1).reduce((a,v,i)=>a+Math.abs(v-rt[i]),0)/(rt.length-1):null;
+   const loss=failures*25;
+   const dl=await request(big,5000);
+   let throughput=null;
+   if(dl.ok&&dl.bytes>=200000&&dl.ms>0)throughput=dl.bytes*8/(dl.ms/1000)/1000000;
+   return {latency,jitter,loss,throughput,time:new Date().toLocaleTimeString('id-ID'),
+     valid:[latency,jitter,loss,throughput].every(Number.isFinite)&&throughput>0};
+ }
+ function issuePrediction(){
+   if(rows.length<12 || !modelReady)return;
+   lastRequestId=sessionId+':'+(++sequence);
+   setStatus('MEMPROSES PREDIKSI','','Mengirim 12 sampel untuk pembentukan 24 fitur dan inferensi XGBoost...');
+   send('streamlit:setComponentValue',{
+     value:{type:'predict',request_id:lastRequestId,sample_count:12,
+       samples:rows.map(s=>({latency_ms:s.latency,jitter_ms:s.jitter,
+         packet_loss_percent:s.loss,throughput_mbps:s.throughput}))},
+     dataType:'json'
+   });
+ }
+ function decide(){
+   if(rows.length<12){
+     setStatus(modelReady?'MENUNGGU DATA':'MODEL BELUM SIAP','',
+       modelReady?'Perlu '+(12-rows.length)+' pengukuran valid lagi.':modelIssue);
+     return;
+   }
+   if(!modelReady){setStatus('MODEL BELUM SIAP','',modelIssue);return;}
+   issuePrediction();
+ }
+ function setRow(s){
+   el('lat').textContent=fmt(s.latency);el('jit').textContent=fmt(s.jitter);
+   el('loss').textContent=fmt(s.loss,0);el('thru').textContent=fmt(s.throughput);
+   el('lastTime').textContent='Terakhir: '+s.time;
+   if(s.valid){rows.push(s);if(rows.length>12)rows.shift();}
+   el('sampleCount').textContent='Riwayat valid: '+rows.length+' / 12 sampel';
+   el('bar').style.width=(rows.length/12*100)+'%';
+   if(s.valid)decide();
+   if(!s.valid){
+     el('notice').textContent='Pengukuran HTTP belum lengkap. Pembacaan tidak valid tidak dihitung. '+(lastError||'Pastikan internet dan file uji tersedia.');
+   }else{
+     el('notice').textContent='Monitoring aktif. Pengukuran berikutnya diperbarui sekitar 5 detik.';
+   }
+   requestAnimationFrame(sendHeight);
+ }
+ async function cycle(myGeneration){
+   if(!running||generation!==myGeneration)return;
+   const started=performance.now();
+   try{
+     const s=await oneSample();
+     if(!running||generation!==myGeneration)return;
+     setRow(s);
+   }catch(e){el('notice').textContent='Pengukuran gagal: '+String(e);}
+   if(!running||generation!==myGeneration)return;
+   clock=setTimeout(()=>cycle(myGeneration),Math.max(400,5000-(performance.now()-started)));
+ }
+ function start(){
+   if(running)return;
+   running=true;generation++;rows=[];probeEndpoint='static';lastError='';
+   sessionId=sessionToken();sequence=0;lastRequestId='';
+   ['lat','jit','loss','thru'].forEach(k=>el(k).textContent='—');
+   el('bar').style.width='0%';el('sampleCount').textContent='Riwayat valid: 0 / 12 sampel';
+   decide();el('notice').textContent='Mengukur koneksi browser...';
+   el('start').disabled=true;el('stop').disabled=false;el('live').classList.add('on');cycle(generation);
+ }
+ function stop(){
+   running=false;generation++;clearTimeout(clock);
+   el('start').disabled=false;el('stop').disabled=true;el('live').classList.remove('on');
+   el('notice').textContent='Monitoring dihentikan. Anda dapat memulai pengukuran baru.';
+ }
+ el('start').addEventListener('click',start);el('stop').addEventListener('click',stop);
+ showConn();updateModelAvailability();
+ send('streamlit:componentReady',{apiVersion:1});
+ requestAnimationFrame(sendHeight);
+})();
+</script>
+</body>
+</html>
