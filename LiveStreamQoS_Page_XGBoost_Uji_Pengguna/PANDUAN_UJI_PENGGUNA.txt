@@ -1,0 +1,21 @@
+LIVESTREAMQOS - HALAMAN UJI PENGGUNA XGBOOST
+
+1. Ekstrak ZIP ke folder BARU (jangan gabungkan ke app.py lama).
+2. Di folder tersebut, klik address bar Explorer, ketik cmd, tekan Enter.
+3. Jalankan: python -m pip install -r requirements.txt
+4. Jalankan: python -m streamlit run app.py
+5. Buka alamat lokal yang ditampilkan CMD (biasanya http://localhost:8501).
+
+UJI PENGGUNA
+1. Tab Prediksi XGBoost: pilih adaptor Wi-Fi yang aktif, klik Mulai Monitoring.
+2. Setelah 12 sampel valid (sekitar 60 detik), baca kelas Normal/Gangguan dan probabilitas.
+3. Tab Penilaian Pengguna: isi tugas yang selesai dan 5 pertanyaan skala 1-5.
+4. Klik Kirim Penilaian.
+5. Tab Evaluasi Model & Unduh Data: unduh CSV hasil UAT.
+
+BERKAS OTOMATIS:
+riwayat_model_terbaik/pengukuran_qos.csv
+riwayat_model_terbaik/prediksi_model_terbaik.csv
+riwayat_model_terbaik/hasil_uji_pengguna_xgboost.csv
+
+Catatan: Hasil XGBoost adalah indikasi QoS untuk horizon 60 detik, bukan bukti aktual bahwa tayangan mengalami buffering. Hasil UAT tidak mengukur akurasi Machine Learning. Model memerlukan 4 parameter valid pada 12 interval historis. Sampel gagal tetap dicatat dan progres tidak mundur.
