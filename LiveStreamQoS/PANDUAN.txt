@@ -1,0 +1,32 @@
+LiveStreamQoS | Monitoring Wi-Fi Laptop Windows
+
+ISI APLIKASI:
+- Home, Prediksi QoS, About
+- Algoritma prediksi internal: XGBoost hasil 4-fold Cross-Validation
+- Tampilan tidak menampilkan nama algoritma atau kolom target ping
+
+CARA PAKAI (Windows):
+1. Ekstrak SEMUA file ZIP ke satu folder baru.
+2. Pastikan Python tersedia (ketik 'python --version' di CMD).
+3. Klik dua kali MULAI_LIVESTREAMQOS.bat.
+4. Tunggu instalasi library pada pemakaian pertama; aplikasi terbuka di localhost:8501.
+5. Klik tab Prediksi QoS, lalu Mulai Monitoring.
+6. Setelah 12 pembacaan valid (biasanya sekitar 60 detik), hasil Normal/Gangguan muncul.
+7. Klik Hentikan Monitoring untuk menyudahi sesi.
+
+Jika memilih menggunakan terminal:
+  python -m pip install -r requirements.txt
+  python -m streamlit run app.py
+
+Hasil CSV tersimpan otomatis di folder riwayat_model_terbaik.
+
+PENTING:
+Program membaca adaptor Wi-Fi mesin yang menjalankan kode Python. Ini berarti
+pada laptop Windows lokal, program mengukur Wi-Fi laptop tersebut. Jika file
+app.py ini di-deploy ke Streamlit Community Cloud, kode Python berjalan di
+server, sehingga TIDAK dapat memonitor Wi-Fi pengunjung lewat link saja.
+Untuk mengukur Wi-Fi setiap laptop pengunjung dari website Cloud, diperlukan
+agen lokal di laptop pengunjung. Browser HP juga tidak bisa menyediakan empat
+parameter ICMP/adaptor yang kompatibel dengan model ini secara langsung.
+
+Prediksi merupakan indikasi QoS, bukan verifikasi buffering streaming.

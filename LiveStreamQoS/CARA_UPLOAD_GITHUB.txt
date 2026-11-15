@@ -1,0 +1,16 @@
+LIVE STREAM QOS - MONITORING BROWSER + HP
+
+File utama Streamlit Cloud: LiveStreamQoS_Cloud/app.py
+Python: 3.11
+
+1. Ekstrak ZIP.
+2. Di GitHub repository LiveStreamQoS, ganti seluruh folder LiveStreamQoS_Cloud dengan versi dari ZIP ini.
+3. Unggah juga folder tersembunyi .streamlit (di root repository) agar berkas pengujian HTTP dapat dilayani.
+4. Pastikan folder LiveStreamQoS_Cloud/static ikut diunggah, berisi probe.txt dan probe_256k.txt.
+5. Commit changes, lalu reboot jika perlu.
+6. Buka https://livestreamqos.streamlit.app dan tab Prediksi QoS.
+7. Klik Mulai Monitoring. Terdapat 12 pembacaan interval sekitar 5 detik.
+
+PENTING: Monitoring dari browser HP dan laptop mengukur HTTP pada koneksi perangkat; ini bukan model XGBoost dan bukan pengukuran ICMP Wi-Fi adaptor. Browser tidak dapat membaca nama adaptor/SSID bila sistem browser tidak mengizinkan. Tidak ada data contoh atau angka buatan.
+
+Jika throughput menunjukkan --, periksa konfigurasi enableStaticServing dan file probe_256k.txt.
