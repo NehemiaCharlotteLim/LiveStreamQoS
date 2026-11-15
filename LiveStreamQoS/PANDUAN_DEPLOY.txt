@@ -1,0 +1,39 @@
+LIVESTREAMQOS - VERSI WEBSITE UNTUK SUS
+
+ISI PAKET (hanya 6 file):
+- app.py
+- requirements.txt
+- model_bundle_qos_4parameter_CV_TERBAIK.joblib
+- contoh_qos_1.csv
+- contoh_qos_2.csv
+- PANDUAN_DEPLOY.txt
+
+CARA MEMPERBARUI WEBSITE YANG SUDAH ADA:
+1. Ekstrak ZIP ini di laptop.
+2. Di GitHub, buka repository LiveStreamQoS.
+3. Karena deployment Anda sebelumnya menunjuk ke LiveStreamQoS_Cloud/app.py,
+   BUKA FOLDER GitHub LiveStreamQoS_Cloud dahulu.
+4. Di folder itu, klik Add file -> Upload files.
+5. Unggah LIMA FILE dari hasil ekstrak: app.py, requirements.txt,
+   model_bundle_qos_4parameter_CV_TERBAIK.joblib, contoh_qos_1.csv,
+   contoh_qos_2.csv. Jika diminta, setujui penggantian file bernama sama.
+6. Commit changes.
+7. Di Streamlit Community Cloud, pastikan main file path tetap
+   LiveStreamQoS_Cloud/app.py dan pilih Python 3.11.
+8. Reboot app jika perlu, lalu buka ulang alamat .streamlit.app.
+
+PENTING:
+- Jika Anda justru menaruh semua file di ROOT repository, ubah Main file path
+  di dashboard deployment menjadi app.py.
+- Jangan hanya upload ZIP tanpa mengekstraknya.
+- Pastikan model .joblib diunggah bersama app.py. Jangan unggah token/kunci.
+- Tidak ada sensor lokal, formulir SUS, atau dependensi JavaScript tambahan.
+- Responden cukup buka website lalu tekan Mulai Pengujian.
+- Model utama di belakang layar tetap XGBoost hasil Cross-Validation.
+- Prediksi menggunakan cuplikan QoS historis dari dataset penelitian.
+- Hasil tidak berasal dari Wi-Fi responden dan bukan verifikasi gangguan video aktual.
+- Skrip monitoring lokal sebelumnya tidak perlu diubah.
+
+UJI DI LAPTOP SENDIRI (OPSIONAL):
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
