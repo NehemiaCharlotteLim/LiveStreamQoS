@@ -1,4 +1,0 @@
-﻿model,cv_composite,mean_f1,std_f1,mean_recall,mean_precision,mean_balanced_accuracy,best_params
-XGBoost,0.6576352248677027,0.6736362572382888,0.07550846720235076,0.7195619245619246,0.6371416253011168,0.6171889928872429,"{""classifier__learning_rate"": 0.03, ""classifier__max_depth"": 2, ""classifier__n_estimators"": 100, ""classifier__subsample"": 1.0}"
-Random Forest,0.6409728211269787,0.6590787175648702,0.0651839970361175,0.6974883674883675,0.627377579749723,0.5943251215338482,"{""classifier__max_depth"": null, ""classifier__min_samples_leaf"": 3, ""classifier__n_estimators"": 100}"
-Logistic Regression,0.5865245053740139,0.5955667718541582,0.07198026177064555,0.579029799029799,0.6198506569833341,0.5675962284438568,"{""classifier__C"": 10.0, ""classifier__class_weight"": null}"
