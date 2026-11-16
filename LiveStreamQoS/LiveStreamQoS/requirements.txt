@@ -1,0 +1,8 @@
+# Deployment Linux di Streamlit Community Cloud; pilih Python 3.12.
+# Paket CPU menghindari unduhan library GPU NVIDIA yang tidak digunakan.
+streamlit==1.67.0
+xgboost-cpu==3.1.3
+scikit-learn==1.8.0
+pandas==2.3.3
+numpy==2.3.5
+joblib==1.5.3
